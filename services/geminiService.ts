@@ -2,15 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FlowerSuggestion, SubscriptionPlan } from "../types";
 
-// Safe access to API_KEY
-const getApiKey = () => {
-  try {
-    return process.env.API_KEY || "";
-  } catch (e) {
-    return "";
-  }
-};
-
 /**
  * Sanitizes a string that might contain markdown JSON blocks
  */
@@ -25,25 +16,33 @@ const sanitizeJsonResponse = (text: string): string => {
 export const getFlowerStyling = async (
   input: string | { base64: string, mimeType: string }
 ): Promise<FlowerSuggestion> => {
-  const ai = new GoogleGenAI({ apiKey: getApiKey() });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const prompt = `Identify this flower (if an image) or use the name provided. 
-  Provide expert floral styling advice and detailed care instructions.
-  Include meanings, wrapping techniques for different occasions (e.g., Anniversary, Sympathy, Celebration), 
-  complementary flowers, a color palette suggestion, and care requirements (watering, sunlight, and temperature strictly in Celsius).
-  If multiple flowers are listed, provide a combined styling suggestion for a bouquet containing all of them.`;
+  const systemInstruction = `You are a world-class professional floral stylist and botanist. 
+Identify the flower(s) provided and offer expert styling, wrapping, and care advice. 
+If multiple flowers are provided, treat them as a request for a cohesive bouquet arrangement.
+Provide meanings, botanical names, and specific wrapping techniques for various occasions. 
+Care instructions must include sunlight, watering, and temperature (strictly in Celsius).
+Output MUST be valid JSON adhering to the provided schema.`;
+
+  const prompt = typeof input === 'string' 
+    ? `Flower(s) to analyze: ${input}` 
+    : "Identify and style the flower(s) in this image.";
+
+  const contents = typeof input === 'string' 
+    ? prompt 
+    : { 
+        parts: [
+          { text: prompt },
+          { inlineData: { data: input.base64, mimeType: input.mimeType } }
+        ] 
+      };
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: typeof input === 'string' 
-      ? prompt + "\nFlower(s): " + input 
-      : { 
-          parts: [
-            { text: prompt },
-            { inlineData: { data: input.base64, mimeType: input.mimeType } }
-          ] 
-        },
+    contents: contents,
     config: {
+      systemInstruction,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -71,10 +70,7 @@ export const getFlowerStyling = async (
             properties: {
               watering: { type: Type.STRING },
               sunlight: { type: Type.STRING },
-              temperature: { 
-                type: Type.STRING,
-                description: "The ideal temperature range strictly in Celsius, e.g., '18-24°C'."
-              }
+              temperature: { type: Type.STRING }
             },
             required: ["watering", "sunlight", "temperature"]
           }
@@ -85,25 +81,25 @@ export const getFlowerStyling = async (
   });
 
   const text = response.text;
-  if (!text) throw new Error("The AI returned an empty response.");
+  if (!text) throw new Error("No response from AI.");
   
   try {
     return JSON.parse(sanitizeJsonResponse(text));
   } catch (err) {
-    console.error("JSON Parse Error:", text);
-    throw new Error("Failed to parse floral data. Please try again.");
+    console.error("Parse error on text:", text);
+    throw new Error("Invalid data format received from stylist.");
   }
 };
 
 export const generateFlowerImage = async (prompt: string): Promise<string | null> => {
-  const ai = new GoogleGenAI({ apiKey: getApiKey() });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
         parts: [
           {
-            text: `A high-quality, professional editorial photograph of a beautiful floral arrangement. ${prompt}. The lighting is soft and natural, studio setting with a clean background. High resolution, aesthetic composition.`,
+            text: `A professional, high-end editorial photograph of a floral arrangement: ${prompt}. Natural soft lighting, elegant background, 4k resolution, bokeh effect.`,
           },
         ],
       },
@@ -115,7 +111,7 @@ export const generateFlowerImage = async (prompt: string): Promise<string | null
     });
 
     const candidates = response.candidates;
-    if (candidates && candidates[0] && candidates[0].content.parts) {
+    if (candidates?.[0]?.content?.parts) {
       for (const part of candidates[0].content.parts) {
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;
@@ -124,23 +120,22 @@ export const generateFlowerImage = async (prompt: string): Promise<string | null
     }
     return null;
   } catch (err) {
-    console.error("Image generation failed:", err);
+    console.warn("Visual generation skipped:", err);
     return null;
   }
 };
 
 export const getSubscriptionPlan = async (vibe: string, preferredFlowers?: string): Promise<SubscriptionPlan> => {
-  const ai = new GoogleGenAI({ apiKey: getApiKey() });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const flowerContext = preferredFlowers ? ` The user also specifically likes these flowers: "${preferredFlowers}", so try to incorporate them or similar varieties into the plan.` : "";
-  const prompt = `Create a 4-week floral subscription plan with the theme: "${vibe}".${flowerContext}
-  Each week should feature a different main flower and seasonal pairings. 
-  Provide a care tip for each week. Ensure the variety is diverse but adheres to the vibe.`;
+  const systemInstruction = "You are a floral subscription curator. Design a 4-week journey for the user based on their vibe and preferences. Return only valid JSON.";
+  const prompt = `Vibe: ${vibe}. ${preferredFlowers ? `Preferred flowers: ${preferredFlowers}` : ""}`;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
+      systemInstruction,
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -169,12 +164,6 @@ export const getSubscriptionPlan = async (vibe: string, preferredFlowers?: strin
   });
 
   const text = response.text;
-  if (!text) throw new Error("The AI returned an empty response.");
-
-  try {
-    return JSON.parse(sanitizeJsonResponse(text));
-  } catch (err) {
-    console.error("JSON Parse Error:", text);
-    throw new Error("Failed to parse subscription plan.");
-  }
+  if (!text) throw new Error("Subscription plan generation failed.");
+  return JSON.parse(sanitizeJsonResponse(text));
 };
