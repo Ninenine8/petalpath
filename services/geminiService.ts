@@ -2,12 +2,19 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FlowerSuggestion, SubscriptionPlan } from "../types";
 
-const API_KEY = process.env.API_KEY || "";
+// Safe access to API_KEY to prevent ReferenceError if 'process' is not defined in the browser global scope
+const getApiKey = () => {
+  try {
+    return process.env.API_KEY || "";
+  } catch (e) {
+    return "";
+  }
+};
 
 export const getFlowerStyling = async (
   input: string | { base64: string, mimeType: string }
 ): Promise<FlowerSuggestion> => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   
   const prompt = `Identify this flower (if an image) or use the name provided. 
   Provide expert floral styling advice and detailed care instructions.
@@ -69,7 +76,7 @@ export const getFlowerStyling = async (
 };
 
 export const generateFlowerImage = async (prompt: string): Promise<string | null> => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -100,7 +107,7 @@ export const generateFlowerImage = async (prompt: string): Promise<string | null
 };
 
 export const getSubscriptionPlan = async (vibe: string, preferredFlowers?: string): Promise<SubscriptionPlan> => {
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   
   const flowerContext = preferredFlowers ? ` The user also specifically likes these flowers: "${preferredFlowers}", so try to incorporate them or similar varieties into the plan.` : "";
   const prompt = `Create a 4-week floral subscription plan with the theme: "${vibe}".${flowerContext}
