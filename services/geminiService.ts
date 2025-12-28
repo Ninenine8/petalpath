@@ -10,9 +10,9 @@ export const getFlowerStyling = async (
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   
   const prompt = `Identify this flower (if an image) or use the name provided. 
-  Provide expert floral styling advice.
+  Provide expert floral styling advice and detailed care instructions.
   Include meanings, wrapping techniques for different occasions (e.g., Anniversary, Sympathy, Celebration), 
-  complementary flowers, and a color palette suggestion.`;
+  complementary flowers, a color palette suggestion, and care requirements (watering, sunlight, and temperature strictly in Celsius).`;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
@@ -46,9 +46,21 @@ export const getFlowerStyling = async (
             }
           },
           complementaryFlowers: { type: Type.ARRAY, items: { type: Type.STRING } },
-          colorPalette: { type: Type.ARRAY, items: { type: Type.STRING } }
+          colorPalette: { type: Type.ARRAY, items: { type: Type.STRING } },
+          careInstructions: {
+            type: Type.OBJECT,
+            properties: {
+              watering: { type: Type.STRING },
+              sunlight: { type: Type.STRING },
+              temperature: { 
+                type: Type.STRING,
+                description: "The ideal temperature range strictly in Celsius, e.g., '18-24°C'."
+              }
+            },
+            required: ["watering", "sunlight", "temperature"]
+          }
         },
-        required: ["name", "wrappingTechniques", "complementaryFlowers", "colorPalette"]
+        required: ["name", "wrappingTechniques", "complementaryFlowers", "colorPalette", "careInstructions"]
       }
     }
   });
@@ -87,12 +99,13 @@ export const generateFlowerImage = async (prompt: string): Promise<string | null
   }
 };
 
-export const getSubscriptionPlan = async (vibe: string): Promise<SubscriptionPlan> => {
+export const getSubscriptionPlan = async (vibe: string, preferredFlowers?: string): Promise<SubscriptionPlan> => {
   const ai = new GoogleGenAI({ apiKey: API_KEY });
   
-  const prompt = `Create a 4-week floral subscription plan with the theme: "${vibe}". 
+  const flowerContext = preferredFlowers ? ` The user also specifically likes these flowers: "${preferredFlowers}", so try to incorporate them or similar varieties into the plan.` : "";
+  const prompt = `Create a 4-week floral subscription plan with the theme: "${vibe}".${flowerContext}
   Each week should feature a different main flower and seasonal pairings. 
-  Provide a care tip for each week.`;
+  Provide a care tip for each week. Ensure the variety is diverse but adheres to the vibe.`;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",

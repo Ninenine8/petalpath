@@ -1,4 +1,10 @@
 
+export interface FlowerCare {
+  watering: string;
+  sunlight: string;
+  temperature: string;
+}
+
 export interface FlowerSuggestion {
   name: string;
   botanicalName?: string;
@@ -11,6 +17,7 @@ export interface FlowerSuggestion {
   }[];
   complementaryFlowers: string[];
   colorPalette: string[];
+  careInstructions: FlowerCare;
 }
 
 export interface SubscriptionWeek {
