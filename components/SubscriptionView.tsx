@@ -2,74 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { getSubscriptionPlan, generateFlowerImage } from '../services/geminiService';
 import { SubscriptionPlan } from '../types';
-
-const ShareButton: React.FC<{ 
-  title: string; 
-  text: string; 
-  className?: string;
-  iconOnly?: boolean;
-}> = ({ title, text, className = "", iconOnly = false }) => {
-  const [status, setStatus] = useState<'idle' | 'copied'>('idle');
-
-  const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const currentUrl = window.location.href.includes('http') ? window.location.href : 'https://petalpath.app';
-    
-    const shareData = {
-      title: title,
-      text: text,
-      url: currentUrl,
-    };
-
-    const textToCopy = `${title}\n\n${text}\n\nShared from PetalPath: ${currentUrl}`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-        return;
-      }
-      throw new Error();
-    } catch (err) {
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(textToCopy);
-          setStatus('copied');
-          setTimeout(() => setStatus('idle'), 2000);
-          return;
-        }
-        throw new Error();
-      } catch (clipErr) {
-        window.prompt("Share your floral plan:", textToCopy);
-      }
-    }
-  };
-
-  return (
-    <button 
-      type="button"
-      onClick={handleShare}
-      className={`relative flex items-center gap-2 px-3 py-1.5 rounded-full transition-all group active:scale-95 z-20 ${className}`}
-      title="Share this"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:rotate-12 transition-transform pointer-events-none"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-      {!iconOnly && <span className="text-xs font-semibold">{status === 'copied' ? 'Copied!' : 'Share'}</span>}
-      {status === 'copied' && (
-        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap animate-in fade-in slide-in-from-bottom-1 z-30 font-bold">
-          Copied!
-        </span>
-      )}
-    </button>
-  );
-};
+import ShareButton from './ShareButton';
 
 const WeekCard: React.FC<{ week: any; onImageClick: (url: string, meta: { title: string, text: string }) => void }> = ({ week, onImageClick }) => {
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [loadingImg, setLoadingImg] = useState(false);
 
-  const shareTitle = `PetalPath: Week ${week.week} Design`;
-  const shareText = `Check out this ${week.mainFlower} arrangement for my floral plan! Theme: ${week.theme}`;
+  const shareTitle = `PetalPath Plan: Week ${week.week}`;
+  const shareText = `Check out this ${week.mainFlower} arrangement for my floral subscription! Theme: ${week.theme}`;
 
   useEffect(() => {
     const fetchImg = async () => {
@@ -171,7 +111,7 @@ const SubscriptionView: React.FC<SubscriptionViewProps> = ({ onImageClick }) => 
           <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-emerald-50 text-center relative overflow-hidden">
             <h3 className="text-4xl font-serif text-emerald-950">{plan.title}</h3>
             <p className="text-emerald-800 text-lg mt-4 italic">{plan.description}</p>
-            <ShareButton title={plan.title} text={plan.description} className="absolute top-6 right-6 bg-emerald-50 text-emerald-700" />
+            <ShareButton title={`PetalPath Plan: ${plan.title}`} text={plan.description} className="absolute top-6 right-6 bg-emerald-50 text-emerald-700" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {plan.weeks.map((week) => (

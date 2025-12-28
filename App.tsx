@@ -4,71 +4,7 @@ import { AppMode, FlowerSuggestion } from './types';
 import { getFlowerStyling, generateFlowerImage } from './services/geminiService';
 import CameraModule from './components/CameraModule';
 import SubscriptionView from './components/SubscriptionView';
-
-const ShareButton: React.FC<{ 
-  title: string; 
-  text: string; 
-  className?: string;
-  iconOnly?: boolean;
-}> = ({ title, text, className = "", iconOnly = false }) => {
-  const [status, setStatus] = useState<'idle' | 'copied'>('idle');
-
-  const handleShare = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Fallback URL if running in a restricted environment
-    const currentUrl = window.location.href.includes('http') ? window.location.href : 'https://petalpath.app';
-    
-    const shareData = {
-      title: title,
-      text: text,
-      url: currentUrl,
-    };
-
-    const textToCopy = `${title}\n\n${text}\n\nShared from PetalPath: ${currentUrl}`;
-
-    try {
-      // Priority 1: Web Share API (Mobile/Modern)
-      if (navigator.share) {
-        await navigator.share(shareData);
-        return;
-      }
-      throw new Error('Share API not supported');
-    } catch (err) {
-      // Priority 2: Clipboard API (Desktop)
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(textToCopy);
-          setStatus('copied');
-          setTimeout(() => setStatus('idle'), 2000);
-          return;
-        }
-        throw new Error('Clipboard not available');
-      } catch (clipErr) {
-        // Priority 3: Fail-safe Prompt
-        window.prompt("Share this floral guide:", textToCopy);
-      }
-    }
-  };
-
-  return (
-    <button 
-      type="button"
-      onClick={handleShare}
-      className={`relative flex items-center gap-2 px-3 py-1.5 rounded-full transition-all group active:scale-95 z-20 ${className}`}
-      title="Share content"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:rotate-12 transition-transform pointer-events-none"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
-      {!iconOnly && <span className="text-xs font-semibold">{status === 'copied' ? 'Copied!' : 'Share'}</span>}
-      {status === 'copied' && (
-        <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-emerald-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap animate-in fade-in slide-in-from-bottom-1 z-30 font-bold">
-          Link Copied!
-        </span>
-      )}
-    </button>
-  );
-};
+import ShareButton from './components/ShareButton';
 
 const TechniqueCard: React.FC<{ 
   tech: any; 
@@ -252,7 +188,7 @@ const App: React.FC = () => {
                           <h2 className="text-4xl font-serif text-emerald-950 capitalize">{result.name}</h2>
                           {result.botanicalName && <p className="text-emerald-700 italic font-medium">{result.botanicalName}</p>}
                         </div>
-                        <ShareButton title={`PetalPath: ${result.name}`} text={`Floral styling guide for ${result.name}. Meaning: ${result.meaning}`} className="bg-emerald-50 text-emerald-700" />
+                        <ShareButton title={`PetalPath Styling: ${result.name}`} text={`Floral guide for ${result.name}. Meaning: ${result.meaning}`} className="bg-emerald-50 text-emerald-700" />
                       </div>
                       <p className="text-emerald-900/80 leading-relaxed text-lg">{result.meaning}</p>
                       <div className="bg-emerald-50/50 rounded-2xl p-6 grid grid-cols-3 gap-4 border border-emerald-100">
