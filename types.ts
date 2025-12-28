@@ -5,6 +5,21 @@ export interface FlowerCare {
   temperature: string;
 }
 
+export interface WeddingBouquet {
+  style: string;
+  description: string;
+  stems: string[];
+  stylingTip: string;
+}
+
+export interface EasyStyling {
+  title: string;
+  effortTime: string;
+  vesselType: string;
+  guide: string[];
+  proTip: string;
+}
+
 export interface FlowerSuggestion {
   name: string;
   botanicalName?: string;
@@ -15,6 +30,8 @@ export interface FlowerSuggestion {
     materials: string[];
     styleNotes: string;
   }[];
+  weddingBouquet?: WeddingBouquet;
+  easyOption?: EasyStyling;
   complementaryFlowers: string[];
   colorPalette: string[];
   careInstructions: FlowerCare;

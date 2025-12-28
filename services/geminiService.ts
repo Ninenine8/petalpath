@@ -21,7 +21,12 @@ export const getFlowerStyling = async (
   const systemInstruction = `You are a world-class professional floral stylist and botanist. 
 Identify the flower(s) provided and offer expert styling, wrapping, and care advice. 
 If multiple flowers are provided, treat them as a request for a cohesive bouquet arrangement.
-Provide meanings, botanical names, and specific wrapping techniques for various occasions. 
+
+MANDATORY OUTPUTS:
+1. "Wedding Bouquet": Professional bridal style and pairing.
+2. "Easy Option": A beginner-friendly, 2-minute styling guide using common household vessels (jars, mugs).
+3. "Wrapping Techniques": 3 pro-level wrapping styles.
+
 Care instructions must include sunlight, watering, and temperature (strictly in Celsius).
 Output MUST be valid JSON adhering to the provided schema.`;
 
@@ -63,6 +68,27 @@ Output MUST be valid JSON adhering to the provided schema.`;
               required: ["occasion", "description", "materials", "styleNotes"]
             }
           },
+          weddingBouquet: {
+            type: Type.OBJECT,
+            properties: {
+              style: { type: Type.STRING },
+              description: { type: Type.STRING },
+              stems: { type: Type.ARRAY, items: { type: Type.STRING } },
+              stylingTip: { type: Type.STRING }
+            },
+            required: ["style", "description", "stems", "stylingTip"]
+          },
+          easyOption: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              effortTime: { type: Type.STRING },
+              vesselType: { type: Type.STRING },
+              guide: { type: Type.ARRAY, items: { type: Type.STRING } },
+              proTip: { type: Type.STRING }
+            },
+            required: ["title", "effortTime", "vesselType", "guide", "proTip"]
+          },
           complementaryFlowers: { type: Type.ARRAY, items: { type: Type.STRING } },
           colorPalette: { type: Type.ARRAY, items: { type: Type.STRING } },
           careInstructions: {
@@ -75,7 +101,7 @@ Output MUST be valid JSON adhering to the provided schema.`;
             required: ["watering", "sunlight", "temperature"]
           }
         },
-        required: ["name", "wrappingTechniques", "complementaryFlowers", "colorPalette", "careInstructions"]
+        required: ["name", "wrappingTechniques", "weddingBouquet", "easyOption", "complementaryFlowers", "colorPalette", "careInstructions"]
       }
     }
   });
@@ -99,7 +125,7 @@ export const generateFlowerImage = async (prompt: string): Promise<string | null
       contents: {
         parts: [
           {
-            text: `A professional, high-end editorial photograph of a floral arrangement: ${prompt}. Natural soft lighting, elegant background, 4k resolution, bokeh effect.`,
+            text: `A professional photograph of a floral arrangement: ${prompt}. Clean minimalist background, natural light.`,
           },
         ],
       },
@@ -128,7 +154,7 @@ export const generateFlowerImage = async (prompt: string): Promise<string | null
 export const getSubscriptionPlan = async (vibe: string, preferredFlowers?: string): Promise<SubscriptionPlan> => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const systemInstruction = "You are a floral subscription curator. Design a 4-week journey for the user based on their vibe and preferences. Return only valid JSON.";
+  const systemInstruction = "You are a floral subscription curator. Design a 4-week journey. Return valid JSON.";
   const prompt = `Vibe: ${vibe}. ${preferredFlowers ? `Preferred flowers: ${preferredFlowers}` : ""}`;
 
   const response = await ai.models.generateContent({
@@ -164,6 +190,6 @@ export const getSubscriptionPlan = async (vibe: string, preferredFlowers?: strin
   });
 
   const text = response.text;
-  if (!text) throw new Error("Subscription plan generation failed.");
+  if (!text) throw new Error("Subscription plan failed.");
   return JSON.parse(sanitizeJsonResponse(text));
 };

@@ -1,10 +1,154 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppMode, FlowerSuggestion } from './types';
+import { AppMode, FlowerSuggestion, WeddingBouquet, EasyStyling } from './types';
 import { getFlowerStyling, generateFlowerImage } from './services/geminiService';
 import CameraModule from './components/CameraModule';
 import SubscriptionView from './components/SubscriptionView';
 import ShareButton from './components/ShareButton';
+
+const EasyStylingCard: React.FC<{ 
+  easy: EasyStyling; 
+  flowerName: string;
+  onImageClick: (url: string, metadata: { title: string, text: string }) => void 
+}> = ({ easy, flowerName, onImageClick }) => {
+  const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [loadingImg, setLoadingImg] = useState(false);
+
+  useEffect(() => {
+    const fetchImg = async () => {
+      setLoadingImg(true);
+      const url = await generateFlowerImage(
+        `A simple and charming home arrangement of ${flowerName} in a ${easy.vesselType}. Minimalist, cozy home setting, soft morning light.`
+      );
+      setImgUrl(url);
+      setLoadingImg(false);
+    };
+    fetchImg();
+  }, [easy, flowerName]);
+
+  const shareTitle = `Easy PetalPath: ${easy.title}`;
+  const shareText = `Quick ${easy.effortTime} styling for ${flowerName} using a ${easy.vesselType}!`;
+
+  return (
+    <div className="bg-amber-50/50 rounded-[32px] overflow-hidden border border-amber-100 p-1">
+      <div className="bg-white rounded-[31px] p-6 md:p-10 md:flex gap-10 items-center">
+        <div className="md:w-1/3 aspect-square bg-amber-50 rounded-2xl overflow-hidden relative group">
+          {loadingImg ? (
+            <div className="w-full h-full flex items-center justify-center animate-pulse text-amber-200 text-3xl">✨</div>
+          ) : imgUrl ? (
+            <img src={imgUrl} alt="Quick Style" onClick={() => onImageClick(imgUrl, { title: shareTitle, text: shareText })} className="w-full h-full object-cover cursor-zoom-in group-hover:scale-105 transition-transform duration-700" />
+          ) : <div className="w-full h-full flex items-center justify-center text-amber-100 text-5xl">🍶</div>}
+          <div className="absolute top-4 left-4 bg-amber-400 text-amber-950 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
+            ⚡ {easy.effortTime} Setup
+          </div>
+        </div>
+        <div className="md:w-2/3 mt-6 md:mt-0 space-y-4">
+          <div className="space-y-1">
+            <span className="text-amber-600 font-bold text-[10px] uppercase tracking-widest">Beginner Friendly</span>
+            <h3 className="text-2xl font-serif text-neutral-900">{easy.title}</h3>
+            <p className="text-sm text-neutral-500">Perfect vessel: <span className="font-bold text-amber-700">{easy.vesselType}</span></p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Steps</span>
+              <ul className="space-y-2">
+                {easy.guide.map((step, i) => (
+                  <li key={i} className="text-xs text-neutral-600 flex gap-3">
+                    <span className="text-amber-400 font-bold">{i+1}.</span>
+                    {step}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-amber-50 rounded-xl p-4 border border-amber-100/50 self-start">
+               <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest block mb-1">Stylist Tip</span>
+               <p className="text-xs text-amber-900/80 leading-relaxed italic">"{easy.proTip}"</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WeddingSection: React.FC<{ 
+  wedding: WeddingBouquet; 
+  flowerName: string;
+  onImageClick: (url: string, metadata: { title: string, text: string }) => void 
+}> = ({ wedding, flowerName, onImageClick }) => {
+  const [imgUrl, setImgUrl] = useState<string | null>(null);
+  const [loadingImg, setLoadingImg] = useState(false);
+
+  useEffect(() => {
+    const fetchImg = async () => {
+      setLoadingImg(true);
+      const url = await generateFlowerImage(
+        `A breathtaking bridal wedding bouquet featuring ${flowerName} in a ${wedding.style} style. Combined with ${wedding.stems.join(', ')}. Professional wedding photography, soft ethereal lighting, white background.`
+      );
+      setImgUrl(url);
+      setLoadingImg(false);
+    };
+    fetchImg();
+  }, [wedding, flowerName]);
+
+  const shareTitle = `PetalPath Wedding: ${wedding.style} ${flowerName}`;
+  const shareText = `Check out this bridal bouquet idea! Style: ${wedding.style}. Stems: ${wedding.stems.join(', ')}.`;
+
+  return (
+    <div className="bg-white rounded-[40px] overflow-hidden shadow-2xl border border-rose-50 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="md:flex">
+        <div className="md:w-2/5 h-[400px] md:h-auto bg-rose-50/50 relative overflow-hidden group">
+          {loadingImg ? (
+            <div className="w-full h-full flex items-center justify-center animate-pulse"><span className="text-4xl text-rose-200">💍</span></div>
+          ) : imgUrl ? (
+            <>
+              <img 
+                src={imgUrl} 
+                alt="Wedding Bouquet" 
+                onClick={() => onImageClick(imgUrl, { title: shareTitle, text: shareText })}
+                className="w-full h-full object-cover cursor-zoom-in hover:scale-105 transition-transform duration-1000"
+              />
+              <ShareButton title={shareTitle} text={shareText} className="absolute top-4 right-4 bg-white/90 text-rose-600 shadow-md" iconOnly />
+            </>
+          ) : <div className="w-full h-full flex items-center justify-center text-rose-100"><span className="text-6xl">🕊️</span></div>}
+          <div className="absolute bottom-4 left-4">
+             <span className="bg-rose-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">Wedding Edit</span>
+          </div>
+        </div>
+        <div className="md:w-3/5 p-8 md:p-12 space-y-8 flex flex-col justify-center">
+          <div className="space-y-2">
+            <h3 className="text-3xl font-serif text-neutral-900">The Bridal Vision</h3>
+            <p className="text-rose-600 font-serif italic text-xl">{wedding.style} Arrangement</p>
+          </div>
+          
+          <p className="text-neutral-600 leading-relaxed italic border-l-4 border-rose-100 pl-6">"{wedding.description}"</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest block">The Recipe</span>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-sm text-neutral-700 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-300"></span>
+                  Main: {flowerName}
+                </li>
+                {wedding.stems.map((stem, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-neutral-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-100"></span>
+                    {stem}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="space-y-3 bg-rose-50/30 p-6 rounded-2xl border border-rose-100/50">
+              <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest block">Stylist's Secret</span>
+              <p className="text-xs text-rose-900 leading-relaxed font-medium">{wedding.stylingTip}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TechniqueCard: React.FC<{ 
   tech: any; 
@@ -146,7 +290,7 @@ const App: React.FC = () => {
 
       <main className="container mx-auto px-4 pt-12">
         {mode === AppMode.IDENTIFY ? (
-          <div className="max-w-3xl mx-auto space-y-12">
+          <div className="max-w-4xl mx-auto space-y-12">
             {!result && !loading && (
               <div className="text-center space-y-4 mb-12 animate-in fade-in duration-1000">
                 <h2 className="text-5xl font-serif text-emerald-950 leading-tight">Design Your <br />Perfect Arrangement</h2>
@@ -154,14 +298,14 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <div className="glass p-6 rounded-3xl shadow-xl space-y-6">
+            <div className="max-w-3xl mx-auto glass p-6 rounded-3xl shadow-xl space-y-6">
               <form onSubmit={handleSearch} className="flex gap-3">
                 <input
                   type="text"
                   value={inputName}
                   onChange={(e) => setInputName(e.target.value)}
                   placeholder="Enter flower name (e.g., Peony, Eucalyptus)"
-                  className="w-full bg-white/50 border border-emerald-100 rounded-2xl py-4 px-6 outline-none transition-all text-black placeholder:text-emerald-800/40"
+                  className="w-full bg-white/50 border border-emerald-100 rounded-2xl py-4 px-6 outline-none transition-all text-black placeholder:text-emerald-800/40 focus:ring-2 focus:ring-emerald-300"
                 />
                 <button type="submit" disabled={loading} className="bg-emerald-700 text-white px-8 rounded-2xl font-medium hover:bg-emerald-800 transition-colors disabled:opacity-50">Ask Stylist</button>
               </form>
@@ -180,6 +324,7 @@ const App: React.FC = () => {
 
             {result && !loading && (
               <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 space-y-12">
+                {/* Species Card */}
                 <div className="bg-white rounded-[32px] overflow-hidden shadow-2xl border border-emerald-50 relative">
                   <div className="md:flex">
                     <div className="md:w-1/2 p-10 space-y-6">
@@ -223,9 +368,34 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Quick Styling Section */}
+                {result.easyOption && (
+                  <div className="space-y-6">
+                    <h3 className="text-3xl font-serif text-neutral-900 text-center">Quick & Easy Styling</h3>
+                    <EasyStylingCard 
+                      easy={result.easyOption} 
+                      flowerName={result.name} 
+                      onImageClick={(url, meta) => setLightbox({ url, ...meta })} 
+                    />
+                  </div>
+                )}
+
+                {/* Wedding Section */}
+                {result.weddingBouquet && (
+                  <div className="space-y-6">
+                    <h3 className="text-3xl font-serif text-neutral-900 text-center">Bridal Inspiration</h3>
+                    <WeddingSection 
+                      wedding={result.weddingBouquet} 
+                      flowerName={result.name} 
+                      onImageClick={(url, meta) => setLightbox({ url, ...meta })} 
+                    />
+                  </div>
+                )}
+
+                {/* General Styling Section */}
                 <div className="space-y-8">
                   <div className="text-center">
-                    <h3 className="text-3xl font-serif text-emerald-950">Wrapping & Bouquet Guides</h3>
+                    <h3 className="text-3xl font-serif text-emerald-950">Expert Wrapping Guides</h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {result.wrappingTechniques.map((tech, idx) => (
