@@ -2,13 +2,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { FlowerSuggestion, SubscriptionPlan } from "../types";
 
-// Safe access to API_KEY to prevent ReferenceError if 'process' is not defined in the browser global scope
+// Safe access to API_KEY
 const getApiKey = () => {
   try {
     return process.env.API_KEY || "";
   } catch (e) {
     return "";
   }
+};
+
+/**
+ * Sanitizes a string that might contain markdown JSON blocks
+ */
+const sanitizeJsonResponse = (text: string): string => {
+  if (!text) return "";
+  return text
+    .replace(/```json\n?/g, "")
+    .replace(/```\n?/g, "")
+    .trim();
 };
 
 export const getFlowerStyling = async (
@@ -19,12 +30,13 @@ export const getFlowerStyling = async (
   const prompt = `Identify this flower (if an image) or use the name provided. 
   Provide expert floral styling advice and detailed care instructions.
   Include meanings, wrapping techniques for different occasions (e.g., Anniversary, Sympathy, Celebration), 
-  complementary flowers, a color palette suggestion, and care requirements (watering, sunlight, and temperature strictly in Celsius).`;
+  complementary flowers, a color palette suggestion, and care requirements (watering, sunlight, and temperature strictly in Celsius).
+  If multiple flowers are listed, provide a combined styling suggestion for a bouquet containing all of them.`;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: typeof input === 'string' 
-      ? prompt + "\nFlower Name: " + input 
+      ? prompt + "\nFlower(s): " + input 
       : { 
           parts: [
             { text: prompt },
@@ -72,7 +84,15 @@ export const getFlowerStyling = async (
     }
   });
 
-  return JSON.parse(response.text);
+  const text = response.text;
+  if (!text) throw new Error("The AI returned an empty response.");
+  
+  try {
+    return JSON.parse(sanitizeJsonResponse(text));
+  } catch (err) {
+    console.error("JSON Parse Error:", text);
+    throw new Error("Failed to parse floral data. Please try again.");
+  }
 };
 
 export const generateFlowerImage = async (prompt: string): Promise<string | null> => {
@@ -94,9 +114,12 @@ export const generateFlowerImage = async (prompt: string): Promise<string | null
       },
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+    const candidates = response.candidates;
+    if (candidates && candidates[0] && candidates[0].content.parts) {
+      for (const part of candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
       }
     }
     return null;
@@ -145,5 +168,13 @@ export const getSubscriptionPlan = async (vibe: string, preferredFlowers?: strin
     }
   });
 
-  return JSON.parse(response.text);
+  const text = response.text;
+  if (!text) throw new Error("The AI returned an empty response.");
+
+  try {
+    return JSON.parse(sanitizeJsonResponse(text));
+  } catch (err) {
+    console.error("JSON Parse Error:", text);
+    throw new Error("Failed to parse subscription plan.");
+  }
 };

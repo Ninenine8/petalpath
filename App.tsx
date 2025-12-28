@@ -103,9 +103,10 @@ const App: React.FC = () => {
       setResult(data);
       const img = await generateFlowerImage(`A stunning, artistic arrangement of ${data.name} featuring textures of ${data.complementaryFlowers.slice(0, 2).join(' and ')}. High-end floral design.`);
       setGeneratedImage(img);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Something went wrong. Please check your internet and try again.");
+      const errorMsg = err.message || "Something went wrong.";
+      alert(`${errorMsg} Please check your connection or try a different search.`);
     } finally {
       setLoading(false);
     }
@@ -120,7 +121,7 @@ const App: React.FC = () => {
     try {
       const data = await getFlowerStyling({ base64, mimeType: 'image/jpeg' });
       setResult(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       alert("Failed to analyze image. Try a clearer shot.");
     } finally {
