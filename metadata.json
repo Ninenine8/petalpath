@@ -1,0 +1,7 @@
+{
+  "name": "PetalPath AI Floral Stylist",
+  "description": "An AI-powered floral companion that identifies flowers from photos or names and provides expert styling, wrapping, and subscription recommendations.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
